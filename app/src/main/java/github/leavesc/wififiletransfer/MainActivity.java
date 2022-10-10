@@ -3,6 +3,7 @@ package github.leavesc.wififiletransfer;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -57,4 +58,25 @@ public class MainActivity extends BaseActivity {
         startActivity(FileReceiverActivity.class);
     }
 
+    public void createAp(View view) {
+
+
+
+//        WifiApManager wifiApManager = new WifiApManager(this);
+//        wifiApManager.createWifiAp("newAp", "123456789");
+//        Log.w("xmg", "wifi enabled ="+wifiApManager.isWifiApEnabled());
+//        if(!wifiApManager.isWifiApEnabled()){
+//            wifiApManager.openWifiAp();
+//        }
+//        wifiApManager.getWifiApInfo();
+    }
+
+
+    public static String encodeHexString(byte[] data) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
 }

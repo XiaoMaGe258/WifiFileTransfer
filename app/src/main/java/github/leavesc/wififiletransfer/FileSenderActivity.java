@@ -27,7 +27,7 @@ import github.leavesc.wififiletransfer.service.FileSenderService;
  */
 public class FileSenderActivity extends BaseActivity {
 
-    public static final String TAG = "FileSenderActivity";
+    public static final String TAG = "xmg";
 
     private static final int CODE_CHOOSE_FILE = 100;
 
@@ -78,6 +78,7 @@ public class FileSenderActivity extends BaseActivity {
                 if (isCreated()) {
                     progressDialog.setTitle("文件发送成功");
                     progressDialog.setCancelable(true);
+                    progressDialog.setCanceledOnTouchOutside(true);
                     progressDialog.show();
                 }
             });
@@ -90,6 +91,7 @@ public class FileSenderActivity extends BaseActivity {
                     progressDialog.setTitle("文件发送失败");
                     progressDialog.setMessage("异常信息： " + e.getMessage());
                     progressDialog.setCancelable(true);
+                    progressDialog.setCanceledOnTouchOutside(true);
                     progressDialog.show();
                 }
             });
@@ -103,14 +105,14 @@ public class FileSenderActivity extends BaseActivity {
             FileSenderService.MyBinder binder = (FileSenderService.MyBinder) service;
             fileSenderService = binder.getService();
             fileSenderService.setProgressChangListener(progressChangListener);
-            Log.e(TAG, "onServiceConnected");
+            Log.e(TAG, "FileSenderActivity  onServiceConnected");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             fileSenderService = null;
             bindService(FileSenderService.class, serviceConnection);
-            Log.e(TAG, "onServiceDisconnected");
+            Log.e(TAG, "FileSenderActivity  onServiceDisconnected");
         }
     };
 
@@ -159,7 +161,7 @@ public class FileSenderActivity extends BaseActivity {
         if (requestCode == CODE_CHOOSE_FILE) {
             if (resultCode == RESULT_OK) {
                 String imageUri = data.getData().toString();
-                Log.e(TAG, "文件路径：" + imageUri);
+                Log.e(TAG, "FileSenderActivity  文件路径：" + imageUri);
                 FileSenderService.startActionTransfer(this, imageUri,
                         WifiLManager.getHotspotIpAddress(this));
             }

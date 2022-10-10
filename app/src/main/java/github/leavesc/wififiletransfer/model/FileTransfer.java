@@ -24,6 +24,9 @@ public class FileTransfer implements Serializable {
     //MD5码
     private String md5;
 
+    //json数据
+    private String json;
+
     public FileTransfer() {
 
     }
@@ -60,6 +63,14 @@ public class FileTransfer implements Serializable {
         this.md5 = md5;
     }
 
+    public String getJson() {
+        return json;
+    }
+
+    public void setJson(String json) {
+        this.json = json;
+    }
+
     @NonNull
     @Override
     public String toString() {
@@ -68,6 +79,7 @@ public class FileTransfer implements Serializable {
                 ", filePath='" + filePath + '\'' +
                 ", fileSize=" + fileSize +
                 ", md5='" + md5 + '\'' +
+                ", json='" + json + '\'' +
                 '}';
     }
 

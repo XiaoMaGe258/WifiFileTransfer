@@ -2,9 +2,12 @@ package github.leavesc.wififiletransfer;
 
 import android.app.ProgressDialog;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
@@ -12,16 +15,20 @@ import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.Locale;
 
 import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.model.FileTransfer;
 import github.leavesc.wififiletransfer.service.FileReceiverService;
+import github.leavesc.wififiletransfer.service.HotSpotStateReceiver;
 
 /**
  * @Author: leavesC
@@ -35,7 +42,7 @@ public class FileReceiverActivity extends BaseActivity {
 
     private ProgressDialog progressDialog;
 
-    private static final String TAG = "ReceiverActivity";
+    private static final String TAG = "xmg";
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
 
@@ -47,18 +54,22 @@ public class FileReceiverActivity extends BaseActivity {
             if (!fileReceiverService.isRunning()) {
                 FileReceiverService.startActionTransfer(FileReceiverActivity.this);
             }
+            Toast.makeText(FileReceiverActivity.this, "网络连接", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "FileReceiverActivity  onServiceConnected");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             fileReceiverService = null;
             bindService(FileReceiverService.class, serviceConnection);
+            Toast.makeText(FileReceiverActivity.this, "网络断开", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "FileReceiverActivity  onServiceDisconnected");
         }
     };
 
     private final FileReceiverService.OnReceiveProgressChangListener progressChangListener = new FileReceiverService.OnReceiveProgressChangListener() {
 
-        private FileTransfer originFileTransfer;
+        private FileTransfer originFileTransfer = new FileTransfer();
 
         @Override
         public void onProgressChanged(final FileTransfer fileTransfer, final long totalTime, final int progress, final double instantSpeed, final long instantRemainingTime, final double averageSpeed, final long averageRemainingTime) {
@@ -103,6 +114,7 @@ public class FileReceiverActivity extends BaseActivity {
                             + "\n" + "本地文件的MD5码是：" + fileTransfer.getMd5()
                             + "\n" + "文件位置：" + fileTransfer.getFilePath());
                     progressDialog.setCancelable(true);
+                    progressDialog.setCanceledOnTouchOutside(true);
                     progressDialog.show();
                     Glide.with(FileReceiverActivity.this).load(fileTransfer.getFilePath()).into(iv_image);
                 }
@@ -119,6 +131,7 @@ public class FileReceiverActivity extends BaseActivity {
                             + "\n" + "文件位置：" + fileTransfer.getFilePath()
                             + "\n" + "异常信息：" + e.getMessage());
                     progressDialog.setCancelable(true);
+                    progressDialog.setCanceledOnTouchOutside(true);
                     progressDialog.show();
                 }
             });
@@ -133,6 +146,8 @@ public class FileReceiverActivity extends BaseActivity {
         setContentView(R.layout.activity_file_receiver);
         initView();
         bindService(FileReceiverService.class, serviceConnection);
+        //注册热点监听
+        listenAp();
     }
 
     private void initView() {
@@ -158,6 +173,13 @@ public class FileReceiverActivity extends BaseActivity {
         if (progressDialog != null && progressDialog.isShowing()) {
             progressDialog.dismiss();
         }
+
+        try {
+            //反注册热点监听
+            unregisterReceiver(hotSpotStateReceiver);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void openFile(String filePath) {
@@ -172,9 +194,37 @@ public class FileReceiverActivity extends BaseActivity {
             intent.setDataAndType(Uri.fromFile(new File(filePath)), mime);
             startActivity(intent);
         } catch (Exception e) {
-            Log.e(TAG, "文件打开异常：" + e.getMessage());
+            Log.e(TAG, "ReceiverActivity  文件打开异常：" + e.getMessage());
             showToast("文件打开异常：" + e.getMessage());
         }
     }
 
+    /**
+     * 注册广播，监听热点连接状态变化。 比如是否连接了热点。
+     */
+    private HotSpotStateReceiver hotSpotStateReceiver;
+    private void listenAp(){
+        //注册广播
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("android.net.wifi.WIFI_AP_STATE_CHANGED");
+        intentFilter.addAction("android.net.conn.TETHER_STATE_CHANGED");
+        hotSpotStateReceiver = new HotSpotStateReceiver();
+        registerReceiver(hotSpotStateReceiver, intentFilter);
+    }
+
+    public static boolean isHotSpotApOpen(Context context) {
+        boolean isAPEnable = false;
+        try {
+            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            Method method = wifiManager.getClass().getDeclaredMethod("getWifiApState");
+            int state = (int) method.invoke(wifiManager);
+            Field field = wifiManager.getClass().getDeclaredField("WIFI_AP_STATE_ENABLED");
+            int value = (int) field.get(wifiManager);
+            isAPEnable = state == value;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if(!isAPEnable && HotSpotStateReceiver.isCompatCheckApOpen) isAPEnable = true;
+        return isAPEnable;
+    }
 }

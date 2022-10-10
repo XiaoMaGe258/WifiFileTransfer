@@ -28,4 +28,12 @@
         android:onClick="startFileReceiverActivity"
         android:text="文件接收端" />
 
+    <Button
+        android:id="@+id/btn_create_ap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:onClick="createAp"
+        android:text="创建热点" />
+
 </LinearLayout>

@@ -10,14 +10,27 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.blankj.utilcode.util.ConvertUtils;
+
+import org.json.JSONObject;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,7 +52,7 @@ public class FileReceiverService extends IntentService {
 
     private static final String ACTION_START_RECEIVE = BuildConfig.APPLICATION_ID + ".service.action.startReceive";
 
-    private static final String TAG = "FileReceiverService";
+    private static final String TAG = "xmg";
 
     public interface OnReceiveProgressChangListener {
 
@@ -81,6 +94,9 @@ public class FileReceiverService extends IntentService {
     private ServerSocket serverSocket;
 
     private InputStream inputStream;
+
+//    private OutputStream outputStream;//接收完数据返回用
+    private PrintWriter printWriter;//接收完数据返回用
 
     private ObjectInputStream objectInputStream;
 
@@ -156,14 +172,14 @@ public class FileReceiverService extends IntentService {
                     averageRemainingTime = (long) ((fileSize - total) / 1024.0 / averageSpeed);
                 }
                 tempTotal = total;
-                Logger.e(TAG, "---------------------------");
-                Logger.e(TAG, "传输进度（%）: " + progress);
-                Logger.e(TAG, "所用时间：" + totalTime);
-                Logger.e(TAG, "瞬时-传输速率（Kb/s）: " + instantSpeed);
-                Logger.e(TAG, "瞬时-预估的剩余完成时间（秒）: " + instantRemainingTime);
-                Logger.e(TAG, "平均-传输速率（Kb/s）: " + averageSpeed);
-                Logger.e(TAG, "平均-预估的剩余完成时间（秒）: " + averageRemainingTime);
-                Logger.e(TAG, "字节变化：" + temp);
+                Logger.e(TAG, "FileReceiverService ---------------------------");
+                Logger.e(TAG, "FileReceiverService  传输进度（%）: " + progress);
+                Logger.e(TAG, "FileReceiverService  所用时间：" + totalTime);
+                Logger.e(TAG, "FileReceiverService  瞬时-传输速率（Kb/s）: " + instantSpeed);
+                Logger.e(TAG, "FileReceiverService  瞬时-预估的剩余完成时间（秒）: " + instantRemainingTime);
+                Logger.e(TAG, "FileReceiverService  平均-传输速率（Kb/s）: " + averageSpeed);
+                Logger.e(TAG, "FileReceiverService  平均-预估的剩余完成时间（秒）: " + averageRemainingTime);
+                Logger.e(TAG, "FileReceiverService  字节变化：" + temp);
                 if (progressChangListener != null) {
                     progressChangListener.onProgressChanged(fileTransfer, totalTime, progress, instantSpeed, instantRemainingTime, averageSpeed, averageRemainingTime);
                 }
@@ -183,6 +199,14 @@ public class FileReceiverService extends IntentService {
         }
     }
 
+    public static String encodeHexString(byte[] data) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null && ACTION_START_RECEIVE.equals(intent.getAction())) {
@@ -194,19 +218,65 @@ public class FileReceiverService extends IntentService {
                 serverSocket.setReuseAddress(true);
                 serverSocket.bind(new InetSocketAddress(Constants.PORT));
                 Socket client = serverSocket.accept();
-                Log.e(TAG, "客户端IP地址 : " + client.getInetAddress().getHostAddress());
+                Log.e(TAG, "FileReceiverService  客户端IP地址 : " + client.getInetAddress().getHostAddress());
                 inputStream = client.getInputStream();
-                objectInputStream = new ObjectInputStream(inputStream);
-                fileTransfer = (FileTransfer) objectInputStream.readObject();
-                Log.e(TAG, "待接收的文件: " + fileTransfer);
-                if (fileTransfer == null) {
-                    exception = new Exception("从文件发送端发来的文件模型为null");
-                    return;
-                } else if (TextUtils.isEmpty(fileTransfer.getMd5())) {
-                    exception = new Exception("从文件发送端发来的文件模型不包含MD5码");
-                    return;
+
+                //TODO 自定义解析数据协议
+                fileTransfer = new FileTransfer();
+                try {
+                    byte[] bufLen = new byte[4];
+                    inputStream.read(bufLen);
+                    String headLenStr = ConvertUtils.bytes2HexString(bufLen);
+                    Log.e("xmg", "#############headLenStr="+headLenStr);//000000EA
+                    int len = ConvertUtils.hexString2Int(headLenStr);
+                    Log.e("xmg", "#############headLen="+len);//234
+
+                    byte[] bufJson = new byte[len];
+                    inputStream.read(bufJson);
+                    String dataStr = new String(bufJson, StandardCharsets.UTF_8);
+                    Log.e("xmg", "#############dataStr="+dataStr);
+
+                    JSONObject jsonObject = new JSONObject(dataStr);
+                    fileTransfer.setFileName(jsonObject.optString("fileName"));
+                    fileTransfer.setFilePath(jsonObject.optString("filePath"));
+                    fileTransfer.setFileSize(jsonObject.optLong("fileSize"));
+                    fileTransfer.setMd5(jsonObject.optString("md5"));
+                    fileTransfer.setJson(jsonObject.optString("json"));
+
+                    Log.i("xmg", "#############jsonObject="+jsonObject.toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                String name = new File(fileTransfer.getFilePath()).getName();
+
+
+                //获取转换对象
+//                try {
+//                    objectInputStream = new ObjectInputStream(inputStream);
+//                    fileTransfer = (FileTransfer) objectInputStream.readObject();
+//                    Log.e(TAG, "FileReceiverService  待接收的文件: " + fileTransfer.toString());
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+
+
+                //TODO test 校验
+//                fileTransfer.setFileName("iosTestImage.png");
+//                fileTransfer.setFilePath("/storage/emulated/0/Android/data/github.leavesc.wififiletransfer/cache/41218518.jpg");
+//                fileTransfer.setMd5("fef89a7d476dbc362e00f1c397c661bb");
+//                fileTransfer.setFileSize(4628889);
+//                fileTransfer.setJson("{\"name\":\"小明\",\"age\":12}");
+
+//                if (fileTransfer == null) {
+//                    exception = new Exception("从文件发送端发来的文件模型为null");
+//                    return;
+//                } else if (TextUtils.isEmpty(fileTransfer.getMd5())) {
+//                    exception = new Exception("从文件发送端发来的文件模型不包含MD5码");
+//                    return;
+//                }
+
+                //TODO test 写文件名
+                String name = fileTransfer.getFileName();
+//                String name = new File(fileTransfer.getFilePath()).getName();
                 //将文件存储至指定位置
                 file = new File(getExternalCacheDir(), name);
                 fileOutputStream = new FileOutputStream(file);
@@ -217,7 +287,22 @@ public class FileReceiverService extends IntentService {
                     fileOutputStream.write(buf, 0, len);
                     total += len;
                 }
-                Log.e(TAG, "文件接收成功");
+                Log.e(TAG, "FileReceiverService  文件接收成功");
+
+
+                //TODO TEST 发送callback数据
+//                outputStream = client.getOutputStream();
+//                outputStream.write("123456".getBytes(StandardCharsets.UTF_8));
+//                printWriter = new PrintWriter(new BufferedWriter(
+//                        new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)), true);
+//                printWriter.println("文件接收成功"+"（服务器发送）");
+//                outputStream = new DataOutputStream(new BufferedOutputStream(
+//                        client.getOutputStream()));
+//                outputStream.writeInt(1);
+//                outputStream.writeUTF("1111111111111111111");
+//                outputStream.flush();
+
+
                 stopCallback();
                 if (progressChangListener != null) {
                     //因为上面在计算文件传输进度时因为小数点问题可能不会显示到100%，所以此处手动将之设为100%
@@ -226,7 +311,7 @@ public class FileReceiverService extends IntentService {
                     progressChangListener.onStartComputeMD5();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "文件接收 Exception: " + e.getMessage());
+                Log.e(TAG, "FileReceiverService  文件接收 Exception: " + e.getMessage());
                 exception = e;
             } finally {
                 FileTransfer transfer = new FileTransfer();
@@ -234,7 +319,7 @@ public class FileReceiverService extends IntentService {
                     transfer.setFilePath(file.getPath());
                     transfer.setFileSize(file.length());
                     transfer.setMd5(Md5Util.getMd5(file));
-                    Log.e(TAG, "计算出的文件的MD5码是：" + transfer.getMd5());
+                    Log.e(TAG, "FileReceiverService  计算出的文件的MD5码是：" + transfer.getMd5());
                 }
                 if (exception != null) {
                     if (progressChangListener != null) {
@@ -250,6 +335,15 @@ public class FileReceiverService extends IntentService {
                         }
                     }
                 }
+
+
+                //TODO TEST 发送callback数据
+//                outputStream.write("123456".getBytes(StandardCharsets.UTF_8));
+//                printWriter = new PrintWriter(new BufferedWriter(
+//                        new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)), true);
+//                printWriter.println("文件接收成功"+"（服务器发送）");
+
+
                 clean();
                 //再次启动服务，等待客户端下次连接
                 startActionTransfer(this);
@@ -277,6 +371,22 @@ public class FileReceiverService extends IntentService {
                 inputStream.close();
                 inputStream = null;
             } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+//        if (outputStream != null) {
+//            try {
+//                outputStream.close();
+//                outputStream = null;
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+        if (printWriter != null) {
+            try {
+                printWriter.close();
+                printWriter = null;
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

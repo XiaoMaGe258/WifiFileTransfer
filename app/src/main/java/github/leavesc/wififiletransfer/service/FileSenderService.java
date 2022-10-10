@@ -8,20 +8,32 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.blankj.utilcode.util.ConvertUtils;
+
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +57,7 @@ public class FileSenderService extends IntentService {
 
     private OutputStream outputStream;
 
-    private ObjectOutputStream objectOutputStream;
+//    private ObjectOutputStream objectOutputStream;
 
     private InputStream inputStream;
 
@@ -57,7 +69,9 @@ public class FileSenderService extends IntentService {
 
     private static final String EXTRA_PARAM_IP_ADDRESS = BuildConfig.APPLICATION_ID + ".service.extra.IpAddress";
 
-    private static final String TAG = "FileSenderService";
+    private static final String EXTRA_PARAM_JSON = BuildConfig.APPLICATION_ID + ".service.extra.Json";
+
+    private static final String TAG = "xmg";
 
     public interface OnSendProgressChangListener {
 
@@ -160,14 +174,14 @@ public class FileSenderService extends IntentService {
                     averageRemainingTime = (long) ((fileSize - total) / 1024.0 / averageSpeed);
                 }
                 tempTotal = total;
-                Logger.e(TAG, "---------------------------");
-                Logger.e(TAG, "传输进度（%）: " + progress);
-                Logger.e(TAG, "所用时间：" + totalTime);
-                Logger.e(TAG, "瞬时-传输速率（Kb/s）: " + instantSpeed);
-                Logger.e(TAG, "瞬时-预估的剩余完成时间（秒）: " + instantRemainingTime);
-                Logger.e(TAG, "平均-传输速率（Kb/s）: " + averageSpeed);
-                Logger.e(TAG, "平均-预估的剩余完成时间（秒）: " + averageRemainingTime);
-                Logger.e(TAG, "字节变化：" + temp);
+                Logger.e(TAG, "FileSenderService  ---------------------------");
+                Logger.e(TAG, "FileSenderService  传输进度（%）: " + progress);
+                Logger.e(TAG, "FileSenderService  所用时间：" + totalTime);
+                Logger.e(TAG, "FileSenderService  瞬时-传输速率（Kb/s）: " + instantSpeed);
+                Logger.e(TAG, "FileSenderService  瞬时-预估的剩余完成时间（秒）: " + instantRemainingTime);
+                Logger.e(TAG, "FileSenderService  平均-传输速率（Kb/s）: " + averageSpeed);
+                Logger.e(TAG, "FileSenderService  平均-预估的剩余完成时间（秒）: " + averageRemainingTime);
+                Logger.e(TAG, "FileSenderService  字节变化：" + temp);
                 if (progressChangListener != null) {
                     progressChangListener.onProgressChanged(fileTransfer, totalTime, progress, instantSpeed, instantRemainingTime, averageSpeed, averageRemainingTime);
                 }
@@ -222,7 +236,7 @@ public class FileSenderService extends IntentService {
                 clean();
 
                 String ipAddress = intent.getStringExtra(EXTRA_PARAM_IP_ADDRESS);
-                Log.e(TAG, "IP地址：" + ipAddress);
+                Log.e(TAG, "FileSenderService  IP地址：" + ipAddress);
                 if (TextUtils.isEmpty(ipAddress)) {
                     return;
                 }
@@ -236,19 +250,22 @@ public class FileSenderService extends IntentService {
                 fileTransfer.setFileSize(outputFile.length());
                 fileTransfer.setFilePath(outputFilePath);
 
+                String jsonParam = intent.getStringExtra(EXTRA_PARAM_JSON);
+                fileTransfer.setJson(jsonParam);
+
                 if (TextUtils.isEmpty(fileTransfer.getMd5())) {
-                    Logger.e(TAG, "MD5码为空，开始计算文件的MD5码");
+                    Logger.e(TAG, "FileSenderService  MD5码为空，开始计算文件的MD5码");
                     if (progressChangListener != null) {
                         progressChangListener.onStartComputeMD5();
                     }
                     fileTransfer.setMd5(Md5Util.getMd5(new File(fileTransfer.getFilePath())));
-                    Log.e(TAG, "计算结束，文件的MD5码值是：" + fileTransfer.getMd5());
+                    Log.e(TAG, "FileSenderService  计算结束，文件的MD5码值是：" + fileTransfer.getMd5());
                 } else {
-                    Logger.e(TAG, "MD5码不为空，无需再次计算，MD5码为：" + fileTransfer.getMd5());
+                    Logger.e(TAG, "FileSenderService  MD5码不为空，无需再次计算，MD5码为：" + fileTransfer.getMd5());
                 }
                 int index = 0;
                 while (ipAddress.equals("0.0.0.0") && index < 5) {
-                    Log.e(TAG, "ip: " + ipAddress);
+                    Log.e(TAG, "FileSenderService  ip: " + ipAddress);
                     ipAddress = WifiLManager.getHotspotIpAddress(this);
                     index++;
                     try {
@@ -265,8 +282,29 @@ public class FileSenderService extends IntentService {
                 socket.bind(null);
                 socket.connect((new InetSocketAddress(ipAddress, Constants.PORT)), 20000);
                 outputStream = socket.getOutputStream();
-                objectOutputStream = new ObjectOutputStream(outputStream);
-                objectOutputStream.writeObject(fileTransfer);
+//                objectOutputStream = new ObjectOutputStream(outputStream);
+//                objectOutputStream.writeObject(fileTransfer);
+                //TODO 自定义传输协议。 头4字节代表后续json数据长度，接着Json(传递相关数据)，再接着发文件。
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("fileName", fileTransfer.getFileName());
+                jsonObject.put("filePath", fileTransfer.getFilePath());
+                jsonObject.put("fileSize", fileTransfer.getFileSize());
+                jsonObject.put("md5", fileTransfer.getMd5());
+                jsonObject.put("json", "{\"name\":\"小明\",\"age\":12}");
+                String jsonStr = jsonObject.toString();
+                Log.d("xmg", "jsonStr.length="+jsonStr.length());
+                byte[] headJson = jsonStr.getBytes(StandardCharsets.UTF_8);
+                Log.d("xmg", "headJson.length="+headJson.length);
+
+                String headLenStr = ConvertUtils.int2HexString(headJson.length);
+                Log.d("xmg", "headLenStr="+headLenStr);//ea
+                String headLenStr8 = String.format("%08X", headJson.length);
+                Log.d("xmg", "headLenStr4="+(headLenStr8));//000000EA
+                byte[] headLen = ConvertUtils.hexString2Bytes(headLenStr8);
+                Log.d("xmg", "headLen.length="+headLen.length);//4
+                byte[] dataBytes = addBytes(headLen, headJson);
+                outputStream.write(dataBytes, 0, dataBytes.length);
+
                 inputStream = new FileInputStream(new File(fileTransfer.getFilePath()));
                 startCallback();
                 byte[] buf = new byte[512];
@@ -275,7 +313,26 @@ public class FileSenderService extends IntentService {
                     outputStream.write(buf, 0, len);
                     total += len;
                 }
-                Log.e(TAG, "文件发送成功");
+                Log.e(TAG, "FileSenderService  文件发送成功");
+
+
+                //TODO TEST
+//                Scanner scanner = new Scanner(System.in);
+//                Scanner in = new Scanner(socket.getInputStream());
+//                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+//                while (scanner.hasNextLine()) {
+//                    out.println(scanner.nextLine());
+//                    System.out.println("Server Response:"+ in.nextLine());
+//                    Log.w("xmg", "Server Response:"+ in.nextLine());
+//                }
+
+//                printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(   //步骤二
+//                        socket.getOutputStream(), "UTF-8")), true);
+//                in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+//                receiveMsg();
+
+
+
                 stopCallback();
                 if (progressChangListener != null) {
                     //因为上面在计算文件传输进度时因为小数点问题可能不会显示到100%，所以此处手动将之设为100%
@@ -283,13 +340,37 @@ public class FileSenderService extends IntentService {
                     progressChangListener.onTransferSucceed(fileTransfer);
                 }
             } catch (Exception e) {
-                Log.e(TAG, "文件发送异常 Exception: " + e.getMessage());
+                Log.e(TAG, "FileSenderService  文件发送异常 Exception: " + e.getMessage());
                 if (progressChangListener != null) {
                     progressChangListener.onTransferFailed(fileTransfer, e);
                 }
             } finally {
                 clean();
             }
+        }
+    }
+
+    public static byte[] addBytes(byte[] data1, byte[] data2) {
+        byte[] data3 = new byte[data1.length + data2.length];
+        System.arraycopy(data1, 0, data3, 0, data1.length);
+        System.arraycopy(data2, 0, data3, data1.length, data2.length);
+        return data3;
+    }
+
+
+    private String receiveMsg;
+    private BufferedReader in;
+    private PrintWriter printWriter;
+
+    private void receiveMsg(){
+        try {
+            while (printWriter != null) {                                      //步骤三
+                if ((receiveMsg = in.readLine()) != null) {
+                    Log.d(TAG, "receiveMsg:" + receiveMsg);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -316,18 +397,34 @@ public class FileSenderService extends IntentService {
                 e.printStackTrace();
             }
         }
-        if (objectOutputStream != null) {
-            try {
-                objectOutputStream.close();
-                objectOutputStream = null;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+//        if (objectOutputStream != null) {
+//            try {
+//                objectOutputStream.close();
+//                objectOutputStream = null;
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
         if (inputStream != null) {
             try {
                 inputStream.close();
                 inputStream = null;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (printWriter != null) {
+            try {
+                printWriter.close();
+                printWriter = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (in != null) {
+            try {
+                in.close();
+                in = null;
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -340,10 +437,12 @@ public class FileSenderService extends IntentService {
     }
 
     public static void startActionTransfer(Context context, String fileUri, String ipAddress) {
+        Log.d("xmg", "FileSenderService.startActionTransfer  fileUri="+fileUri+"  ipAddress="+ipAddress);
         Intent intent = new Intent(context, FileSenderService.class);
         intent.setAction(ACTION_START_SEND);
         intent.putExtra(EXTRA_PARAM_FILE_TRANSFER, fileUri);
         intent.putExtra(EXTRA_PARAM_IP_ADDRESS, ipAddress);
+        intent.putExtra(EXTRA_PARAM_JSON, "{\"name\":\"小明\",\"age\":12}");
         context.startService(intent);
     }
 
