@@ -148,10 +148,10 @@ public class FileSenderActivity extends BaseActivity {
     }
 
     public void sendFile(View view) {
-        if (!Constants.AP_SSID.equals(WifiLManager.getConnectedSSID(this))) {
-            showToast("当前连接的 Wifi 并非文件接收端开启的 Wifi 热点，请重试或者检查权限");
-            return;
-        }
+//        if (!Constants.AP_SSID.equals(WifiLManager.getConnectedSSID(this))) {
+//            showToast("当前连接的 Wifi 并非文件接收端开启的 Wifi 热点，请重试或者检查权限");
+//            return;
+//        }
         navToChosePicture();
     }
 
@@ -163,7 +163,8 @@ public class FileSenderActivity extends BaseActivity {
                 String imageUri = data.getData().toString();
                 Log.e(TAG, "FileSenderActivity  文件路径：" + imageUri);
                 FileSenderService.startActionTransfer(this, imageUri,
-                        WifiLManager.getHotspotIpAddress(this));
+                        WifiLManager.getHotspotIpAddress(this),
+                        WifiLManager.getLocalIpAddress(this), "send");
             }
         }
     }

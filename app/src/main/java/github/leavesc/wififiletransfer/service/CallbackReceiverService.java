@@ -1,15 +1,11 @@
 package github.leavesc.wififiletransfer.service;
 
 import android.app.IntentService;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.IBinder;
-import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
@@ -17,18 +13,11 @@ import com.blankj.utilcode.util.ConvertUtils;
 
 import org.json.JSONObject;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -43,7 +32,6 @@ import github.leavesc.wififiletransfer.BuildConfig;
 import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.common.Logger;
 import github.leavesc.wififiletransfer.common.Md5Util;
-import github.leavesc.wififiletransfer.manager.WifiLManager;
 import github.leavesc.wififiletransfer.model.FileTransfer;
 
 /**
@@ -52,7 +40,7 @@ import github.leavesc.wififiletransfer.model.FileTransfer;
  * @Desc:
  * @Github：https://github.com/leavesC
  */
-public class FileReceiverService extends IntentService {
+public class CallbackReceiverService extends IntentService {
 
     private static final String ACTION_START_RECEIVE = BuildConfig.APPLICATION_ID + ".service.action.startReceive";
 
@@ -109,13 +97,13 @@ public class FileReceiverService extends IntentService {
     private OnReceiveProgressChangListener progressChangListener;
 
     public class MyBinder extends Binder {
-        public FileReceiverService getService() {
-            return FileReceiverService.this;
+        public CallbackReceiverService getService() {
+            return CallbackReceiverService.this;
         }
     }
 
-    public FileReceiverService() {
-        super("FileReceiverService");
+    public CallbackReceiverService() {
+        super("CallbackReceiverService");
     }
 
     @Nullable
@@ -176,14 +164,14 @@ public class FileReceiverService extends IntentService {
                     averageRemainingTime = (long) ((fileSize - total) / 1024.0 / averageSpeed);
                 }
                 tempTotal = total;
-                Logger.e(TAG, "FileReceiverService ---------------------------");
-                Logger.e(TAG, "FileReceiverService  传输进度（%）: " + progress);
-                Logger.e(TAG, "FileReceiverService  所用时间：" + totalTime);
-                Logger.e(TAG, "FileReceiverService  瞬时-传输速率（Kb/s）: " + instantSpeed);
-                Logger.e(TAG, "FileReceiverService  瞬时-预估的剩余完成时间（秒）: " + instantRemainingTime);
-                Logger.e(TAG, "FileReceiverService  平均-传输速率（Kb/s）: " + averageSpeed);
-                Logger.e(TAG, "FileReceiverService  平均-预估的剩余完成时间（秒）: " + averageRemainingTime);
-                Logger.e(TAG, "FileReceiverService  字节变化：" + temp);
+                Logger.e(TAG, "CallbackReceiverService ---------------------------");
+                Logger.e(TAG, "CallbackReceiverService  传输进度（%）: " + progress);
+                Logger.e(TAG, "CallbackReceiverService  所用时间：" + totalTime);
+                Logger.e(TAG, "CallbackReceiverService  瞬时-传输速率（Kb/s）: " + instantSpeed);
+                Logger.e(TAG, "CallbackReceiverService  瞬时-预估的剩余完成时间（秒）: " + instantRemainingTime);
+                Logger.e(TAG, "CallbackReceiverService  平均-传输速率（Kb/s）: " + averageSpeed);
+                Logger.e(TAG, "CallbackReceiverService  平均-预估的剩余完成时间（秒）: " + averageRemainingTime);
+                Logger.e(TAG, "CallbackReceiverService  字节变化：" + temp);
                 if (progressChangListener != null) {
                     progressChangListener.onProgressChanged(fileTransfer, totalTime, progress, instantSpeed, instantRemainingTime, averageSpeed, averageRemainingTime);
                 }
@@ -222,7 +210,7 @@ public class FileReceiverService extends IntentService {
                 serverSocket.setReuseAddress(true);
                 serverSocket.bind(new InetSocketAddress(Constants.PORT));
                 Socket client = serverSocket.accept();
-                Log.e(TAG, "FileReceiverService  客户端IP地址 : " + client.getInetAddress().getHostAddress());
+                Log.e(TAG, "CallbackReceiverService  客户端IP地址 : " + client.getInetAddress().getHostAddress());
                 inputStream = client.getInputStream();
 
                 //TODO 自定义解析数据协议
@@ -259,7 +247,7 @@ public class FileReceiverService extends IntentService {
 //                try {
 //                    objectInputStream = new ObjectInputStream(inputStream);
 //                    fileTransfer = (FileTransfer) objectInputStream.readObject();
-//                    Log.e(TAG, "FileReceiverService  待接收的文件: " + fileTransfer.toString());
+//                    Log.e(TAG, "CallbackReceiverService  待接收的文件: " + fileTransfer.toString());
 //                } catch (Exception e) {
 //                    e.printStackTrace();
 //                }
@@ -281,19 +269,8 @@ public class FileReceiverService extends IntentService {
 //                }
 
                 //TODO test
-                String name = fileTransfer.getFileName();
-//                String name = new File(fileTransfer.getFilePath()).getName();
-                //将文件存储至指定位置
-                file = new File(getExternalCacheDir(), name);
-                fileOutputStream = new FileOutputStream(file);
-                startCallback();
-                byte[] buf = new byte[512];
-                int len;
-                while ((len = inputStream.read(buf)) != -1) {
-                    fileOutputStream.write(buf, 0, len);
-                    total += len;
-                }
-                Log.e(TAG, "FileReceiverService  文件接收成功");
+                String json = fileTransfer.getJson();
+                Log.w(TAG, "callback 成功="+json);
 
 
                 //TODO TEST 发送callback数据
@@ -317,7 +294,7 @@ public class FileReceiverService extends IntentService {
                     progressChangListener.onStartComputeMD5();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "FileReceiverService  文件接收 Exception: " + e.getMessage());
+                Log.e(TAG, "CallbackReceiverService  文件接收 Exception: " + e.getMessage());
                 exception = e;
             } finally {
                 FileTransfer transfer = new FileTransfer();
@@ -325,7 +302,7 @@ public class FileReceiverService extends IntentService {
                     transfer.setFilePath(file.getPath());
                     transfer.setFileSize(file.length());
                     transfer.setMd5(Md5Util.getMd5(file));
-                    Log.e(TAG, "FileReceiverService  计算出的文件的MD5码是：" + transfer.getMd5());
+                    Log.e(TAG, "CallbackReceiverService  计算出的文件的MD5码是：" + transfer.getMd5());
                 }
                 if (exception != null) {
                     if (progressChangListener != null) {
@@ -349,14 +326,10 @@ public class FileReceiverService extends IntentService {
 //                        new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)), true);
 //                printWriter.println("文件接收成功"+"（服务器发送）");
 
-                String serverIp = fileTransfer.getServerIp();
-                String clientIp = fileTransfer.getClientIp();
 
                 clean();
                 //TODO 再次启动服务，等待客户端下次连接
 //                startActionTransfer(this);
-                //TODO 启动发送服务，给客户端发消息
-                startCallbackTransfer(this, serverIp, clientIp);
             }
         }
     }
@@ -428,42 +401,9 @@ public class FileReceiverService extends IntentService {
     }
 
     public static void startActionTransfer(Context context) {
-        Intent intent = new Intent(context, FileReceiverService.class);
+        Intent intent = new Intent(context, CallbackReceiverService.class);
         intent.setAction(ACTION_START_RECEIVE);
         context.startService(intent);
-    }
-
-    private CallbackSenderService callbackSenderService;
-    public void startCallbackTransfer(Context context, String serverIp, String clientIp) {
-//        context.bindService(new Intent(context, FileSenderService.class),
-//                serviceConnection,
-//                Context.BIND_AUTO_CREATE);
-//        bindService(FileSenderService.class, serviceConnection);
-//        if("callback".equals(type)){
-//            CallbackSenderService.startActionTransfer(context, "",
-//                    transfer.getClientIp(), transfer.getServerIp(), type);
-//        }
-        Log.d("xmg", "startCallbackTransfer  0");
-        context.bindService(new Intent(context, CallbackSenderService.class), new ServiceConnection() {
-
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                CallbackSenderService.MyBinder binder = (CallbackSenderService.MyBinder) service;
-                callbackSenderService = binder.getService();
-//                callbackSenderService.setProgressChangListener(progressChangListener);
-                Log.e(TAG, "FileSenderActivity  onServiceConnected");
-
-                CallbackSenderService.startActionTransfer(context, "",
-                        clientIp, serverIp,  "callback");
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-                callbackSenderService = null;
-//                bindService(FileSenderService.class, serviceConnection);
-                Log.e(TAG, "FileSenderActivity  onServiceDisconnected");
-            }
-        }, Context.BIND_AUTO_CREATE);
     }
 
     public void setProgressChangListener(OnReceiveProgressChangListener progressChangListener) {

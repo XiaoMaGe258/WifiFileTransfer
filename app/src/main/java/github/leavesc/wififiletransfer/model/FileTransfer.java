@@ -27,6 +27,12 @@ public class FileTransfer implements Serializable {
     //json数据
     private String json;
 
+    //服务端Ip
+    private String serverIp;
+
+    //客户端Ip
+    private String clientIp;
+
     public FileTransfer() {
 
     }
@@ -71,6 +77,22 @@ public class FileTransfer implements Serializable {
         this.json = json;
     }
 
+    public String getServerIp() {
+        return serverIp;
+    }
+
+    public void setServerIp(String serverIp) {
+        this.serverIp = serverIp;
+    }
+
+    public String getClientIp() {
+        return clientIp;
+    }
+
+    public void setClientIp(String clientIp) {
+        this.clientIp = clientIp;
+    }
+
     @NonNull
     @Override
     public String toString() {
@@ -80,6 +102,8 @@ public class FileTransfer implements Serializable {
                 ", fileSize=" + fileSize +
                 ", md5='" + md5 + '\'' +
                 ", json='" + json + '\'' +
+                ", serverIp='" + serverIp + '\'' +
+                ", clientIp='" + clientIp + '\'' +
                 '}';
     }
 

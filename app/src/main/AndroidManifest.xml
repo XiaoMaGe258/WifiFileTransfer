@@ -44,6 +44,14 @@
             android:enabled="true"
             android:exported="false" />
 
+        <service
+            android:name=".service.CallbackReceiverService"
+            android:exported="false" />
+        <service
+            android:name=".service.CallbackSenderService"
+            android:enabled="true"
+            android:exported="false" />
+
     </application>
 
 </manifest>
