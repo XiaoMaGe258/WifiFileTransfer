@@ -1,6 +1,8 @@
 package github.leavesc.wififiletransfer;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -39,6 +41,16 @@ public class BaseActivity extends AppCompatActivity {
 
     protected boolean isCreated() {
         return !isFinishing() && !isDestroyed();
+    }
+
+
+    public void restartApp() {
+        Intent intent = getPackageManager()
+                .getLaunchIntentForPackage(getPackageName());
+        PendingIntent restartIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+        AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1000, restartIntent); // 1秒钟后重启应用
+        System.exit(0);
     }
 
 }

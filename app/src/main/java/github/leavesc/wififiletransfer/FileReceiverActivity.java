@@ -261,6 +261,16 @@ public class FileReceiverActivity extends BaseActivity {
     public void onEventBusCalled(ActionEvent event) {
         Log.i(TAG, "FileReceiverActivity  onEventBusCalled事件："+event.type);
         switch (event.type){
+            case ActionEvent.TYPE_RESET_APP:
+                //重启应用
+                if (fileReceiverService != null) {
+                    fileReceiverService.stopService(FileReceiverActivity.this);
+                }
+                if(callbackSenderService != null){
+                    callbackSenderService.stopActionTransfer(FileReceiverActivity.this);
+                }
+                restartApp();
+                break;
             case ActionEvent.TYPE_START_RECEIVER_SERVICES:
                 if (!fileReceiverService.isRunning()) {
                     FileReceiverService.startActionTransfer(FileReceiverActivity.this);

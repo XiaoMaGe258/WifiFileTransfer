@@ -252,7 +252,7 @@ public class FileSenderService extends IntentService {
                 Uri imageUri = Uri.parse(intent.getStringExtra(EXTRA_PARAM_FILE_TRANSFER));
                 String outputFilePath = getOutputFilePath(this, imageUri);
                 File outputFile = new File(outputFilePath);
-
+                Log.d("xmg", "outputFilePath="+outputFilePath);
                 fileTransfer = new FileTransfer();
                 fileTransfer.setFileName(outputFile.getName());
                 fileTransfer.setFileSize(outputFile.length());
@@ -287,14 +287,11 @@ public class FileSenderService extends IntentService {
                     return;
                 }
                 fileTransfer.setServerIp(ipAddress);
-                Log.d("xmg", "test 1 ipAddress="+ipAddress);
+                Log.d("xmg", "ipAddress="+ipAddress+"  FileName="+fileTransfer.getFileName());
                 socket = new Socket();
                 socket.bind(null);
-                Log.d("xmg", "test 2");
                 socket.connect((new InetSocketAddress(ipAddress, Constants.PORT)), 20000);
-                Log.d("xmg", "test 3");
                 outputStream = socket.getOutputStream();
-                Log.d("xmg", "test 4");
 //                objectOutputStream = new ObjectOutputStream(outputStream);
 //                objectOutputStream.writeObject(fileTransfer);
                 //TODO 自定义传输协议。 头4字节代表后续json数据长度，接着Json(传递相关数据)，再接着发文件。
@@ -369,6 +366,7 @@ public class FileSenderService extends IntentService {
             }
 
             EventBus.getDefault().post(new ActionEvent(ActionEvent.TYPE_START_RECEIVER_CALLBACK_SERVICES));
+
 //            startReceiverService(this);
         }
     }

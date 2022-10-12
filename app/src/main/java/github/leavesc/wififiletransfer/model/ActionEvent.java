@@ -2,6 +2,8 @@ package github.leavesc.wififiletransfer.model;
 
 public class ActionEvent {
 
+    public static final int TYPE_RESET_APP = -1; //重启应用
+
     public static final int TYPE_START_RECEIVER_SERVICES = 1; //启动接收文件服务
     public static final int TYPE_START_SENDER_SERVICES = 2; //启动发送文件服务
 

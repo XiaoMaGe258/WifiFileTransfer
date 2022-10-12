@@ -408,6 +408,12 @@ public class CallbackReceiverService extends IntentService {
         context.startService(intent);
     }
 
+    public void stopService(Context context){
+        clean();
+        Intent intent = new Intent(context, CallbackReceiverService.class);
+        context.stopService(intent);
+    }
+
     public void setProgressChangListener(OnReceiveProgressChangListener progressChangListener) {
         this.progressChangListener = progressChangListener;
     }

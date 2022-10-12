@@ -286,7 +286,7 @@ public class FileReceiverService extends IntentService {
                 //TODO test
                 String name = fileTransfer.getFileName();
 //                String name = new File(fileTransfer.getFilePath()).getName();
-                //将文件存储至指定位置
+                //将文件存储至指定位置 /sdcard/Android/data/包名/cache
                 file = new File(getExternalCacheDir(), name);
                 fileOutputStream = new FileOutputStream(file);
                 startCallback();
@@ -446,6 +446,12 @@ public class FileReceiverService extends IntentService {
         Intent intent = new Intent(context, FileReceiverService.class);
         intent.setAction(ACTION_START_RECEIVE);
         context.startService(intent);
+    }
+
+    public void stopService(Context context){
+        clean();
+        Intent intent = new Intent(context, FileReceiverService.class);
+        context.stopService(intent);
     }
 
 //    private CallbackSenderService callbackSenderService;

@@ -213,6 +213,17 @@ public class FileSenderActivity extends BaseActivity {
     public void onEventBusCalled(ActionEvent event) {
         Log.i(TAG, "onEventBusCalled事件："+event.type);
         switch (event.type){
+            case ActionEvent.TYPE_RESET_APP:
+                //重启应用
+                if (fileSenderService != null) {
+                    fileSenderService.clean();
+                }
+                if(callbackReceiverService != null){
+                    callbackReceiverService.stopService(FileSenderActivity.this);
+                }
+
+                restartApp();
+                break;
             case ActionEvent.TYPE_START_SENDER_CALLBACK_SERVICES:
                 break;
             case ActionEvent.TYPE_START_RECEIVER_CALLBACK_SERVICES:

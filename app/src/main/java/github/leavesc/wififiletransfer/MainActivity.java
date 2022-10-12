@@ -1,6 +1,8 @@
 package github.leavesc.wififiletransfer;
 
 import android.Manifest;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -61,6 +63,10 @@ public class MainActivity extends BaseActivity {
     public void createAp(View view) {
 
 
+        Intent it = new Intent();
+        ComponentName cn = new ComponentName("com.android.settings","com.android.settings.wifi.WifiSettings");
+        it.setComponent(cn);
+        startActivity(it);
 
 //        WifiApManager wifiApManager = new WifiApManager(this);
 //        wifiApManager.createWifiAp("newAp", "123456789");
