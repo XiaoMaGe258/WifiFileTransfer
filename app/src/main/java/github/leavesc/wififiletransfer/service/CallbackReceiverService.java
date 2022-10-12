@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 
 import com.blankj.utilcode.util.ConvertUtils;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -32,6 +33,7 @@ import github.leavesc.wififiletransfer.BuildConfig;
 import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.common.Logger;
 import github.leavesc.wififiletransfer.common.Md5Util;
+import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
 
 /**

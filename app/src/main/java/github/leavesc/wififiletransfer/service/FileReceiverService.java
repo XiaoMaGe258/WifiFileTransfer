@@ -15,6 +15,8 @@ import androidx.annotation.Nullable;
 
 import com.blankj.utilcode.util.ConvertUtils;
 
+import org.greenrobot.eventbus.EventBus;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedOutputStream;
@@ -44,6 +46,7 @@ import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.common.Logger;
 import github.leavesc.wififiletransfer.common.Md5Util;
 import github.leavesc.wififiletransfer.manager.WifiLManager;
+import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
 
 /**
@@ -356,7 +359,19 @@ public class FileReceiverService extends IntentService {
                 //TODO 再次启动服务，等待客户端下次连接
 //                startActionTransfer(this);
                 //TODO 启动发送服务，给客户端发消息
-                startCallbackTransfer(this, serverIp, clientIp);
+//                startCallbackTransfer(this, serverIp, clientIp);
+
+                try {
+                    JSONObject json = new JSONObject();
+                    json.put("serverIp", serverIp);
+                    json.put("clientIp", clientIp);
+                    EventBus.getDefault().post(
+                            new ActionEvent(
+                                    ActionEvent.TYPE_START_SENDER_CALLBACK_SERVICES,
+                                    json.toString()));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -367,7 +382,7 @@ public class FileReceiverService extends IntentService {
         clean();
     }
 
-    private void clean() {
+    public void clean() {
         if (serverSocket != null && !serverSocket.isClosed()) {
             try {
                 serverSocket.close();
@@ -433,38 +448,38 @@ public class FileReceiverService extends IntentService {
         context.startService(intent);
     }
 
-    private CallbackSenderService callbackSenderService;
-    public void startCallbackTransfer(Context context, String serverIp, String clientIp) {
-//        context.bindService(new Intent(context, FileSenderService.class),
-//                serviceConnection,
-//                Context.BIND_AUTO_CREATE);
-//        bindService(FileSenderService.class, serviceConnection);
-//        if("callback".equals(type)){
-//            CallbackSenderService.startActionTransfer(context, "",
-//                    transfer.getClientIp(), transfer.getServerIp(), type);
-//        }
-        Log.d("xmg", "startCallbackTransfer  0");
-        context.bindService(new Intent(context, CallbackSenderService.class), new ServiceConnection() {
-
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                CallbackSenderService.MyBinder binder = (CallbackSenderService.MyBinder) service;
-                callbackSenderService = binder.getService();
-//                callbackSenderService.setProgressChangListener(progressChangListener);
-                Log.e(TAG, "FileSenderActivity  onServiceConnected");
-
-                CallbackSenderService.startActionTransfer(context, "",
-                        clientIp, serverIp,  "callback");
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-                callbackSenderService = null;
-//                bindService(FileSenderService.class, serviceConnection);
-                Log.e(TAG, "FileSenderActivity  onServiceDisconnected");
-            }
-        }, Context.BIND_AUTO_CREATE);
-    }
+//    private CallbackSenderService callbackSenderService;
+//    public void startCallbackTransfer(Context context, String serverIp, String clientIp) {
+////        context.bindService(new Intent(context, FileSenderService.class),
+////                serviceConnection,
+////                Context.BIND_AUTO_CREATE);
+////        bindService(FileSenderService.class, serviceConnection);
+////        if("callback".equals(type)){
+////            CallbackSenderService.startActionTransfer(context, "",
+////                    transfer.getClientIp(), transfer.getServerIp(), type);
+////        }
+//        Log.d("xmg", "startCallbackTransfer  0");
+//        context.bindService(new Intent(context, CallbackSenderService.class), new ServiceConnection() {
+//
+//            @Override
+//            public void onServiceConnected(ComponentName name, IBinder service) {
+//                CallbackSenderService.MyBinder binder = (CallbackSenderService.MyBinder) service;
+//                callbackSenderService = binder.getService();
+////                callbackSenderService.setProgressChangListener(progressChangListener);
+//                Log.e(TAG, "FileSenderActivity  onServiceConnected");
+//
+//                CallbackSenderService.startActionTransfer(context, "",
+//                        clientIp, serverIp,  "callback");
+//            }
+//
+//            @Override
+//            public void onServiceDisconnected(ComponentName name) {
+//                callbackSenderService = null;
+////                bindService(FileSenderService.class, serviceConnection);
+//                Log.e(TAG, "FileSenderActivity  onServiceDisconnected");
+//            }
+//        }, Context.BIND_AUTO_CREATE);
+//    }
 
     public void setProgressChangListener(OnReceiveProgressChangListener progressChangListener) {
         this.progressChangListener = progressChangListener;

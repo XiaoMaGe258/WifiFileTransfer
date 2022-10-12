@@ -19,6 +19,11 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -26,7 +31,9 @@ import java.text.MessageFormat;
 import java.util.Locale;
 
 import github.leavesc.wififiletransfer.common.Constants;
+import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
+import github.leavesc.wififiletransfer.service.CallbackSenderService;
 import github.leavesc.wififiletransfer.service.FileReceiverService;
 import github.leavesc.wififiletransfer.service.HotSpotStateReceiver;
 
@@ -39,6 +46,8 @@ import github.leavesc.wififiletransfer.service.HotSpotStateReceiver;
 public class FileReceiverActivity extends BaseActivity {
 
     private FileReceiverService fileReceiverService;
+
+    private CallbackSenderService callbackSenderService;
 
     private ProgressDialog progressDialog;
 
@@ -64,6 +73,24 @@ public class FileReceiverActivity extends BaseActivity {
             bindService(FileReceiverService.class, serviceConnection);
             Toast.makeText(FileReceiverActivity.this, "网络断开", Toast.LENGTH_SHORT).show();
             Log.e(TAG, "FileReceiverActivity  onServiceDisconnected");
+        }
+    };
+
+    private final ServiceConnection mCallbackServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            CallbackSenderService.MyBinder binder = (CallbackSenderService.MyBinder) service;
+            callbackSenderService = binder.getService();
+//                callbackSenderService.setProgressChangListener(progressChangListener);
+            Log.e(TAG, "FileSenderActivity  onServiceConnected");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            callbackSenderService = null;
+//                bindService(FileSenderService.class, serviceConnection);
+            Log.e(TAG, "FileSenderActivity  onServiceDisconnected");
         }
     };
 
@@ -144,8 +171,10 @@ public class FileReceiverActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_file_receiver);
+        EventBus.getDefault().register(this);
         initView();
         bindService(FileReceiverService.class, serviceConnection);
+        bindService(CallbackSenderService.class, mCallbackServiceConnection);
         //注册热点监听
         listenAp();
     }
@@ -226,5 +255,41 @@ public class FileReceiverActivity extends BaseActivity {
         }
         if(!isAPEnable && HotSpotStateReceiver.isCompatCheckApOpen) isAPEnable = true;
         return isAPEnable;
+    }
+
+    @Subscribe
+    public void onEventBusCalled(ActionEvent event) {
+        Log.i(TAG, "FileReceiverActivity  onEventBusCalled事件："+event.type);
+        switch (event.type){
+            case ActionEvent.TYPE_START_RECEIVER_SERVICES:
+                if (!fileReceiverService.isRunning()) {
+                    FileReceiverService.startActionTransfer(FileReceiverActivity.this);
+                }else{
+                    fileReceiverService.clean();
+                    FileReceiverService.startActionTransfer(FileReceiverActivity.this);
+                }
+                break;
+            case ActionEvent.TYPE_START_SENDER_CALLBACK_SERVICES:
+                if(callbackSenderService != null){
+                    String clientIp = "";
+                    String serverIp = "";
+                    try {
+                        JSONObject jsonObject = new JSONObject(event.action);
+                        serverIp = jsonObject.optString("serverIp");
+                        clientIp = jsonObject.optString("clientIp");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    CallbackSenderService.startActionTransfer(FileReceiverActivity.this,
+                            "", clientIp, serverIp,  "callback");
+                }
+                break;
+            case ActionEvent.TYPE_STOP_SENDER_CALLBACK_SERVICES:
+                if(callbackSenderService != null){
+                    callbackSenderService.stopActionTransfer(FileReceiverActivity.this);
+                }
+                break;
+        }
+
     }
 }

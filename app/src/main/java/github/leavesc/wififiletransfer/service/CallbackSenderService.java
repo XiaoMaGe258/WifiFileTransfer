@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 
 import com.blankj.utilcode.util.ConvertUtils;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -40,6 +41,7 @@ import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.common.Logger;
 import github.leavesc.wififiletransfer.common.Md5Util;
 import github.leavesc.wififiletransfer.manager.WifiLManager;
+import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
 
 /**
@@ -58,7 +60,7 @@ public class CallbackSenderService extends IntentService {
 
 //    private InputStream inputStream;
 
-    private OnSendProgressChangListener progressChangListener;
+//    private OnSendProgressChangListener progressChangListener;
 
     private static final String ACTION_START_SEND = BuildConfig.APPLICATION_ID + ".service.action.startSend";
 
@@ -72,42 +74,42 @@ public class CallbackSenderService extends IntentService {
 
     private static final String TAG = "xmg";
 
-    public interface OnSendProgressChangListener {
-
-        /**
-         * 如果待发送的文件还没计算MD5码，则在开始计算MD5码时回调
-         */
-        void onStartComputeMD5();
-
-        /**
-         * 当传输进度发生变化时回调
-         *
-         * @param fileTransfer         待发送的文件模型
-         * @param totalTime            传输到现在所用的时间
-         * @param progress             文件传输进度
-         * @param instantSpeed         瞬时-文件传输速率
-         * @param instantRemainingTime 瞬时-预估的剩余完成时间
-         * @param averageSpeed         平均-文件传输速率
-         * @param averageRemainingTime 平均-预估的剩余完成时间
-         */
-        void onProgressChanged(FileTransfer fileTransfer, long totalTime, int progress, double instantSpeed, long instantRemainingTime, double averageSpeed, long averageRemainingTime);
-
-        /**
-         * 当文件传输成功时回调
-         *
-         * @param fileTransfer FileTransfer
-         */
-        void onTransferSucceed(FileTransfer fileTransfer);
-
-        /**
-         * 当文件传输失败时回调
-         *
-         * @param fileTransfer FileTransfer
-         * @param e            Exception
-         */
-        void onTransferFailed(FileTransfer fileTransfer, Exception e);
-
-    }
+//    public interface OnSendProgressChangListener {
+//
+//        /**
+//         * 如果待发送的文件还没计算MD5码，则在开始计算MD5码时回调
+//         */
+//        void onStartComputeMD5();
+//
+//        /**
+//         * 当传输进度发生变化时回调
+//         *
+//         * @param fileTransfer         待发送的文件模型
+//         * @param totalTime            传输到现在所用的时间
+//         * @param progress             文件传输进度
+//         * @param instantSpeed         瞬时-文件传输速率
+//         * @param instantRemainingTime 瞬时-预估的剩余完成时间
+//         * @param averageSpeed         平均-文件传输速率
+//         * @param averageRemainingTime 平均-预估的剩余完成时间
+//         */
+//        void onProgressChanged(FileTransfer fileTransfer, long totalTime, int progress, double instantSpeed, long instantRemainingTime, double averageSpeed, long averageRemainingTime);
+//
+//        /**
+//         * 当文件传输成功时回调
+//         *
+//         * @param fileTransfer FileTransfer
+//         */
+//        void onTransferSucceed(FileTransfer fileTransfer);
+//
+//        /**
+//         * 当文件传输失败时回调
+//         *
+//         * @param fileTransfer FileTransfer
+//         * @param e            Exception
+//         */
+//        void onTransferFailed(FileTransfer fileTransfer, Exception e);
+//
+//    }
 
     public CallbackSenderService() {
         super("CallbackSenderService");
@@ -125,21 +127,21 @@ public class CallbackSenderService extends IntentService {
         return new CallbackSenderService.MyBinder();
     }
 
-    private ScheduledExecutorService callbackService;
+//    private ScheduledExecutorService callbackService;
 
 //    private FileTransfer fileTransfer;
 
-    //总的已传输字节数
-    private long total;
-
-    //在上一次更新进度时已传输的文件总字节数
-    private long tempTotal = 0;
-
-    //计算瞬时传输速率的间隔时间
-    private static final int PERIOD = 400;
-
-    //传输操作开始时间
-    private Date startTime;
+//    //总的已传输字节数
+//    private long total;
+//
+//    //在上一次更新进度时已传输的文件总字节数
+//    private long tempTotal = 0;
+//
+//    //计算瞬时传输速率的间隔时间
+//    private static final int PERIOD = 400;
+//
+//    //传输操作开始时间
+//    private Date startTime;
 
 //    private void startCallback() {
 //        stopCallback();
@@ -190,43 +192,43 @@ public class CallbackSenderService extends IntentService {
 //        callbackService.scheduleAtFixedRate(runnable, 0, PERIOD, TimeUnit.MILLISECONDS);
 //    }
 
-    private void stopCallback() {
-        if (callbackService != null) {
-            if (!callbackService.isShutdown()) {
-                callbackService.shutdownNow();
-            }
-            callbackService = null;
-        }
-    }
+//    private void stopCallback() {
+//        if (callbackService != null) {
+//            if (!callbackService.isShutdown()) {
+//                callbackService.shutdownNow();
+//            }
+//            callbackService = null;
+//        }
+//    }
 
-    private String getOutputFilePath(Context context, Uri fileUri) throws Exception {
-        String outputFilePath = context.getExternalCacheDir().getAbsolutePath() +
-                File.separatorChar + new Random().nextInt(10000) +
-                new Random().nextInt(10000) + ".jpg";
-        File outputFile = new File(outputFilePath);
-        if (!outputFile.exists()) {
-            outputFile.getParentFile().mkdirs();
-            outputFile.createNewFile();
-        }
-        Uri outputFileUri = Uri.fromFile(outputFile);
-        copyFile(context, fileUri, outputFileUri);
-        return outputFilePath;
-    }
+//    private String getOutputFilePath(Context context, Uri fileUri) throws Exception {
+//        String outputFilePath = context.getExternalCacheDir().getAbsolutePath() +
+//                File.separatorChar + new Random().nextInt(10000) +
+//                new Random().nextInt(10000) + ".jpg";
+//        File outputFile = new File(outputFilePath);
+//        if (!outputFile.exists()) {
+//            outputFile.getParentFile().mkdirs();
+//            outputFile.createNewFile();
+//        }
+//        Uri outputFileUri = Uri.fromFile(outputFile);
+//        copyFile(context, fileUri, outputFileUri);
+//        return outputFilePath;
+//    }
 
-    private void copyFile(Context context, Uri inputUri, Uri outputUri) throws NullPointerException,
-            IOException {
-        try (InputStream inputStream = context.getContentResolver().openInputStream(inputUri);
-             OutputStream outputStream = new FileOutputStream(outputUri.getPath())) {
-            if (inputStream == null) {
-                throw new NullPointerException("InputStream for given input Uri is null");
-            }
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
-            }
-        }
-    }
+//    private void copyFile(Context context, Uri inputUri, Uri outputUri) throws NullPointerException,
+//            IOException {
+//        try (InputStream inputStream = context.getContentResolver().openInputStream(inputUri);
+//             OutputStream outputStream = new FileOutputStream(outputUri.getPath())) {
+//            if (inputStream == null) {
+//                throw new NullPointerException("InputStream for given input Uri is null");
+//            }
+//            byte[] buffer = new byte[1024];
+//            int length;
+//            while ((length = inputStream.read(buffer)) > 0) {
+//                outputStream.write(buffer, 0, length);
+//            }
+//        }
+//    }
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -342,7 +344,7 @@ public class CallbackSenderService extends IntentService {
 
 
 
-                stopCallback();
+//                stopCallback();
 //                if (progressChangListener != null) {
 //                    //因为上面在计算文件传输进度时因为小数点问题可能不会显示到100%，所以此处手动将之设为100%
 //                    progressChangListener.onProgressChanged(fileTransfer, 0, 100, 0, 0, 0, 0);
@@ -357,6 +359,9 @@ public class CallbackSenderService extends IntentService {
             } finally {
                 clean();
             }
+
+            EventBus.getDefault().post(new ActionEvent(ActionEvent.TYPE_STOP_SENDER_CALLBACK_SERVICES));
+            EventBus.getDefault().post(new ActionEvent(ActionEvent.TYPE_START_RECEIVER_SERVICES));
         }
     }
 
@@ -439,10 +444,10 @@ public class CallbackSenderService extends IntentService {
                 e.printStackTrace();
             }
         }
-        stopCallback();
-        total = 0;
-        tempTotal = 0;
-        startTime = null;
+//        stopCallback();
+//        total = 0;
+//        tempTotal = 0;
+//        startTime = null;
 //        fileTransfer = null;
     }
 
@@ -458,8 +463,14 @@ public class CallbackSenderService extends IntentService {
         context.startService(intent);
     }
 
-    public void setProgressChangListener(OnSendProgressChangListener progressChangListener) {
-        this.progressChangListener = progressChangListener;
+    public void stopActionTransfer(Context context) {
+        clean();
+
+        Intent intent = new Intent(context, CallbackSenderService.class);
+        context.stopService(intent);
     }
+//    public void setProgressChangListener(OnSendProgressChangListener progressChangListener) {
+//        this.progressChangListener = progressChangListener;
+//    }
 
 }

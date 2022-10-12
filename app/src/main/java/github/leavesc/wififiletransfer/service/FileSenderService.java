@@ -16,6 +16,8 @@ import androidx.annotation.Nullable;
 
 import com.blankj.utilcode.util.ConvertUtils;
 
+import org.greenrobot.eventbus.EventBus;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -46,6 +48,7 @@ import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.common.Logger;
 import github.leavesc.wififiletransfer.common.Md5Util;
 import github.leavesc.wififiletransfer.manager.WifiLManager;
+import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
 
 /**
@@ -365,7 +368,8 @@ public class FileSenderService extends IntentService {
                 clean();
             }
 
-            startReceiverService(this);
+            EventBus.getDefault().post(new ActionEvent(ActionEvent.TYPE_START_RECEIVER_CALLBACK_SERVICES));
+//            startReceiverService(this);
         }
     }
 
@@ -469,31 +473,31 @@ public class FileSenderService extends IntentService {
     }
 
 
-    private CallbackReceiverService callbackReceiverService;
-    public void startReceiverService(Context context){
-        bindService(new Intent(context, CallbackReceiverService.class), new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                CallbackReceiverService.MyBinder binder = (CallbackReceiverService.MyBinder) service;
-                callbackReceiverService = binder.getService();
-//                fileReceiverService.setProgressChangListener(progressChangListener);
-
-                Toast.makeText(context, "网络连接", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "FileReceiverActivity  onServiceConnected");
-                if (!callbackReceiverService.isRunning()) {
-                    CallbackReceiverService.startActionTransfer(context);
-                }
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-                callbackReceiverService = null;
-//                bindService(FileReceiverService.class, serviceConnection);
-                Toast.makeText(context, "网络断开", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "FileReceiverActivity  onServiceDisconnected");
-            }
-        }, Context.BIND_AUTO_CREATE);
-    }
+//    private CallbackReceiverService callbackReceiverService;
+//    public void startReceiverService(Context context){
+//        bindService(new Intent(context, CallbackReceiverService.class), new ServiceConnection() {
+//            @Override
+//            public void onServiceConnected(ComponentName name, IBinder service) {
+//                CallbackReceiverService.MyBinder binder = (CallbackReceiverService.MyBinder) service;
+//                callbackReceiverService = binder.getService();
+////                fileReceiverService.setProgressChangListener(progressChangListener);
+//
+//                Toast.makeText(context, "网络连接", Toast.LENGTH_SHORT).show();
+//                Log.e(TAG, "FileReceiverActivity  onServiceConnected");
+//                if (!callbackReceiverService.isRunning()) {
+//                    CallbackReceiverService.startActionTransfer(context);
+//                }
+//            }
+//
+//            @Override
+//            public void onServiceDisconnected(ComponentName name) {
+//                callbackReceiverService = null;
+////                bindService(FileReceiverService.class, serviceConnection);
+//                Toast.makeText(context, "网络断开", Toast.LENGTH_SHORT).show();
+//                Log.e(TAG, "FileReceiverActivity  onServiceDisconnected");
+//            }
+//        }, Context.BIND_AUTO_CREATE);
+//    }
 
     public void setProgressChangListener(OnSendProgressChangListener progressChangListener) {
         this.progressChangListener = progressChangListener;

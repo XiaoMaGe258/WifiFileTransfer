@@ -10,13 +10,23 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.text.MessageFormat;
 
 import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.manager.WifiLManager;
+import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
+import github.leavesc.wififiletransfer.service.CallbackReceiverService;
+import github.leavesc.wififiletransfer.service.CallbackSenderService;
+import github.leavesc.wififiletransfer.service.FileReceiverService;
 import github.leavesc.wififiletransfer.service.FileSenderService;
 
 /**
@@ -32,6 +42,8 @@ public class FileSenderActivity extends BaseActivity {
     private static final int CODE_CHOOSE_FILE = 100;
 
     private FileSenderService fileSenderService;
+
+    private CallbackReceiverService callbackReceiverService;
 
     private ProgressDialog progressDialog;
 
@@ -116,12 +128,34 @@ public class FileSenderActivity extends BaseActivity {
         }
     };
 
+    private final ServiceConnection callbackServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            CallbackReceiverService.MyBinder binder = (CallbackReceiverService.MyBinder) service;
+            callbackReceiverService = binder.getService();
+//                fileReceiverService.setProgressChangListener(progressChangListener);
+
+//            Toast.makeText(context, "网络连接", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "FileReceiverActivity  onServiceConnected");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            callbackReceiverService = null;
+            bindService(CallbackReceiverService.class, callbackServiceConnection);
+//            Toast.makeText(context, "网络断开", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "FileReceiverActivity  onServiceDisconnected");
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_file_sender);
+        EventBus.getDefault().register(this);
         initView();
         bindService(FileSenderService.class, serviceConnection);
+        bindService(CallbackReceiverService.class, callbackServiceConnection);
     }
 
     private void initView() {
@@ -173,6 +207,23 @@ public class FileSenderActivity extends BaseActivity {
         Intent intent = new Intent(Intent.ACTION_PICK, null);
         intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
         startActivityForResult(intent, CODE_CHOOSE_FILE);
+    }
+
+    @Subscribe
+    public void onEventBusCalled(ActionEvent event) {
+        Log.i(TAG, "onEventBusCalled事件："+event.type);
+        switch (event.type){
+            case ActionEvent.TYPE_START_SENDER_CALLBACK_SERVICES:
+                break;
+            case ActionEvent.TYPE_START_RECEIVER_CALLBACK_SERVICES:
+                if(callbackReceiverService != null){
+                    if (!callbackReceiverService.isRunning()) {
+                        CallbackReceiverService.startActionTransfer(FileSenderActivity.this);
+                    }
+                }
+                break;
+        }
+
     }
 
 }
