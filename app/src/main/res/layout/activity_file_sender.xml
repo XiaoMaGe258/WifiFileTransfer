@@ -18,6 +18,12 @@
         android:layout_height="wrap_content"
         android:layout_margin="20dp"
         android:onClick="sendFile"
-        android:text="选择要发送的文件" />
+        android:text="选择要发送的图片" />
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:onClick="sendVideo"
+        android:text="选择要发送的视频文件" />
 
 </LinearLayout>

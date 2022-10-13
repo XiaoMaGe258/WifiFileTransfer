@@ -1,5 +1,7 @@
 package github.leavesc.wififiletransfer;
 
+import static com.vincent.filepicker.activity.ImagePickActivity.IS_NEED_CAMERA;
+
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -10,23 +12,25 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import com.vincent.filepicker.FPConstant;
+import com.vincent.filepicker.activity.ImagePickActivity;
+import com.vincent.filepicker.activity.VideoPickActivity;
+import com.vincent.filepicker.filter.entity.ImageFile;
+import com.vincent.filepicker.filter.entity.VideoFile;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 
 import github.leavesc.wififiletransfer.common.Constants;
 import github.leavesc.wififiletransfer.manager.WifiLManager;
 import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
 import github.leavesc.wififiletransfer.service.CallbackReceiverService;
-import github.leavesc.wififiletransfer.service.CallbackSenderService;
-import github.leavesc.wififiletransfer.service.FileReceiverService;
 import github.leavesc.wififiletransfer.service.FileSenderService;
 
 /**
@@ -186,7 +190,21 @@ public class FileSenderActivity extends BaseActivity {
 //            showToast("当前连接的 Wifi 并非文件接收端开启的 Wifi 热点，请重试或者检查权限");
 //            return;
 //        }
-        navToChosePicture();
+//        navToChosePicture();
+        Intent intent1 = new Intent(this, ImagePickActivity.class);
+        intent1.putExtra(IS_NEED_CAMERA, false);
+        intent1.putExtra(FPConstant.MAX_NUMBER, 1);
+        startActivityForResult(intent1, FPConstant.REQUEST_CODE_PICK_IMAGE);
+    }
+    public void sendVideo(View view) {
+//        if (!Constants.AP_SSID.equals(WifiLManager.getConnectedSSID(this))) {
+//            showToast("当前连接的 Wifi 并非文件接收端开启的 Wifi 热点，请重试或者检查权限");
+//            return;
+//        }
+        Intent intent = new Intent(this, VideoPickActivity.class);
+        intent.putExtra(IS_NEED_CAMERA, false);
+        intent.putExtra(FPConstant.MAX_NUMBER, 1);
+        startActivityForResult(intent, FPConstant.REQUEST_CODE_PICK_VIDEO);
     }
 
     @Override
@@ -199,6 +217,20 @@ public class FileSenderActivity extends BaseActivity {
                 FileSenderService.startActionTransfer(this, imageUri,
                         WifiLManager.getHotspotIpAddress(this),
                         WifiLManager.getLocalIpAddress(this), "send");
+            }
+        }else if(requestCode == FPConstant.REQUEST_CODE_PICK_IMAGE && resultCode == RESULT_OK){
+            ArrayList<ImageFile> list = data.getParcelableArrayListExtra(FPConstant.RESULT_PICK_IMAGE);
+            for(ImageFile file : list){
+                FileSenderService.startActionTransfer(this, file.getPath(),
+                        WifiLManager.getHotspotIpAddress(this),
+                        WifiLManager.getLocalIpAddress(this), "image");
+            }
+        }else if(requestCode == FPConstant.REQUEST_CODE_PICK_VIDEO && resultCode == RESULT_OK){
+            ArrayList<VideoFile> list = data.getParcelableArrayListExtra(FPConstant.RESULT_PICK_VIDEO);
+            for(VideoFile file : list){
+                FileSenderService.startActionTransfer(this, file.getPath(),
+                        WifiLManager.getHotspotIpAddress(this),
+                        WifiLManager.getLocalIpAddress(this), "video");
             }
         }
     }

@@ -249,8 +249,11 @@ public class FileSenderService extends IntentService {
                     return;
                 }
 
-                Uri imageUri = Uri.parse(intent.getStringExtra(EXTRA_PARAM_FILE_TRANSFER));
-                String outputFilePath = getOutputFilePath(this, imageUri);
+//                Uri imageUri = Uri.parse(intent.getStringExtra(EXTRA_PARAM_FILE_TRANSFER));
+//                String outputFilePath = getOutputFilePath(this, imageUri);
+                //将Uri改为Path
+                String outputFilePath = intent.getStringExtra(EXTRA_PARAM_FILE_TRANSFER);
+
                 File outputFile = new File(outputFilePath);
                 Log.d("xmg", "outputFilePath="+outputFilePath);
                 fileTransfer = new FileTransfer();
@@ -259,8 +262,8 @@ public class FileSenderService extends IntentService {
                 fileTransfer.setFilePath(outputFilePath);
                 fileTransfer.setClientIp(localIp);
 
-                String jsonParam = intent.getStringExtra(EXTRA_PARAM_JSON);
-                fileTransfer.setJson(jsonParam);
+                String json = intent.getStringExtra(EXTRA_PARAM_JSON);
+                fileTransfer.setJson(json);
 
                 if (TextUtils.isEmpty(fileTransfer.getMd5())) {
                     Logger.e(TAG, "FileSenderService  MD5码为空，开始计算文件的MD5码");
@@ -300,7 +303,7 @@ public class FileSenderService extends IntentService {
                 jsonObject.put("filePath", fileTransfer.getFilePath());
                 jsonObject.put("fileSize", fileTransfer.getFileSize());
                 jsonObject.put("md5", fileTransfer.getMd5());
-                jsonObject.put("json", "{\"content\":"+fileTransfer.getJson()+"}");
+                jsonObject.put("json", "{\"otherInfo\":\""+json+"\"}");
                 jsonObject.put("clientIp", fileTransfer.getClientIp());
                 jsonObject.put("serverIp", fileTransfer.getServerIp());
 
@@ -457,16 +460,16 @@ public class FileSenderService extends IntentService {
         fileTransfer = null;
     }
 
-    public static void startActionTransfer(Context context, String fileUri, String serverIp, String clientIp, String type) {
-        Log.d("xmg", "FileSenderService.startActionTransfer  fileUri="+fileUri
-                +"  serverIp="+serverIp+"  clientIp="+clientIp+"  type="+type);
+    public static void startActionTransfer(Context context, String filePath, String serverIp, String clientIp, String json) {
+        Log.d("xmg", "FileSenderService.startActionTransfer  filePath="+filePath
+                +"  serverIp="+serverIp+"  clientIp="+clientIp+"  json="+json);
         Intent intent = new Intent();
         intent.setClass(context, FileSenderService.class);
         intent.setAction(ACTION_START_SEND);
-        intent.putExtra(EXTRA_PARAM_FILE_TRANSFER, fileUri);
+        intent.putExtra(EXTRA_PARAM_FILE_TRANSFER, filePath);
         intent.putExtra(EXTRA_PARAM_IP_ADDRESS, serverIp);
         intent.putExtra(EXTRA_PARAM_LOCAL_IP_ADDRESS, clientIp);
-        intent.putExtra(EXTRA_PARAM_JSON, type);
+        intent.putExtra(EXTRA_PARAM_JSON, json);
         context.startService(intent);
     }
 
