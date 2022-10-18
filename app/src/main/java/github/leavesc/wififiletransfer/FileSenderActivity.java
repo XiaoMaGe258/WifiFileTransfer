@@ -13,6 +13,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.shuyu.gsyvideoplayer.model.GSYVideoModel;
+import com.shuyu.gsyvideoplayer.video.base.GSYBaseVideoPlayer;
 import com.vincent.filepicker.FPConstant;
 import com.vincent.filepicker.activity.ImagePickActivity;
 import com.vincent.filepicker.activity.VideoPickActivity;
@@ -25,8 +27,10 @@ import org.greenrobot.eventbus.Subscribe;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.List;
 
 import github.leavesc.wififiletransfer.common.Constants;
+import github.leavesc.wififiletransfer.videoplayer.MyListVideoPlayer;
 import github.leavesc.wififiletransfer.manager.WifiLManager;
 import github.leavesc.wififiletransfer.model.ActionEvent;
 import github.leavesc.wififiletransfer.model.FileTransfer;
@@ -162,6 +166,7 @@ public class FileSenderActivity extends BaseActivity {
         bindService(CallbackReceiverService.class, callbackServiceConnection);
     }
 
+    MyListVideoPlayer videoPlayer;
     private void initView() {
         setTitle("发送文件");
         TextView tv_hint = findViewById(R.id.tv_hint);
@@ -173,6 +178,8 @@ public class FileSenderActivity extends BaseActivity {
         progressDialog.setTitle("发送文件");
         progressDialog.setMax(100);
         progressDialog.setIndeterminate(false);
+
+        videoPlayer = findViewById(R.id.video_player);
     }
 
     @Override
@@ -201,9 +208,12 @@ public class FileSenderActivity extends BaseActivity {
 //            showToast("当前连接的 Wifi 并非文件接收端开启的 Wifi 热点，请重试或者检查权限");
 //            return;
 //        }
+        if(videoPlayer != null){
+            videoPlayer.release();
+        }
         Intent intent = new Intent(this, VideoPickActivity.class);
         intent.putExtra(IS_NEED_CAMERA, false);
-        intent.putExtra(FPConstant.MAX_NUMBER, 1);
+        intent.putExtra(FPConstant.MAX_NUMBER, 3);
         startActivityForResult(intent, FPConstant.REQUEST_CODE_PICK_VIDEO);
     }
 
@@ -227,10 +237,20 @@ public class FileSenderActivity extends BaseActivity {
             }
         }else if(requestCode == FPConstant.REQUEST_CODE_PICK_VIDEO && resultCode == RESULT_OK){
             ArrayList<VideoFile> list = data.getParcelableArrayListExtra(FPConstant.RESULT_PICK_VIDEO);
+            List<GSYVideoModel> urls = new ArrayList<>();
+            int index = 0;
             for(VideoFile file : list){
-                FileSenderService.startActionTransfer(this, file.getPath(),
-                        WifiLManager.getHotspotIpAddress(this),
-                        WifiLManager.getLocalIpAddress(this), "video");
+
+                urls.add(new GSYVideoModel(file.getPath(), "标题"+index));
+                index++;
+//                FileSenderService.startActionTransfer(this, file.getPath(),
+//                        WifiLManager.getHotspotIpAddress(this),
+//                        WifiLManager.getLocalIpAddress(this), "video");
+            }
+            if(videoPlayer != null){
+                videoPlayer.setUp(urls, false, 0);
+                videoPlayer.setListLoop(true);
+                videoPlayer.startPlayLogic();
             }
         }
     }

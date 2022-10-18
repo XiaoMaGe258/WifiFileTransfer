@@ -269,7 +269,7 @@ public class FileReceiverService extends IntentService {
 
 
                 //TODO test 校验
-//                fileTransfer.setFileName("iosTestImage.png");
+//                fileTransfer.setFileName("iosTestImage.png") ;
 //                fileTransfer.setFilePath("/storage/emulated/0/Android/data/github.leavesc.wififiletransfer/cache/41218518.jpg");
 //                fileTransfer.setMd5("fef89a7d476dbc362e00f1c397c661bb");
 //                fileTransfer.setFileSize(4628889);
