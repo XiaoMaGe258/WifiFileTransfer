@@ -280,9 +280,7 @@ public class FileSenderActivity extends BaseActivity {
                 break;
             case ActionEvent.TYPE_START_RECEIVER_CALLBACK_SERVICES:
                 if(callbackReceiverService != null){
-                    if (!callbackReceiverService.isRunning()) {
-                        CallbackReceiverService.startActionTransfer(FileSenderActivity.this);
-                    }
+                    CallbackReceiverService.startActionTransfer(FileSenderActivity.this);
                 }
                 break;
         }
